@@ -1,0 +1,28 @@
+# Dockerfile
+
+FROM php:8.1-fpm
+
+# Install system dependencies and PHP extensions needed by Laravel
+RUN apt-get update && apt-get install -y \
+    git unzip libonig-dev libzip-dev zip libpq-dev libpng-dev libjpeg-dev libfreetype6-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install pdo pdo_mysql mbstring zip gd
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Set working directory
+WORKDIR /var/www/html
+
+# Copy project files
+COPY . .
+
+# Install dependencies
+RUN composer install --no-interaction --prefer-dist --optimize-autoloader
+
+# Run migrations (optional)
+RUN php artisan migrate --force
+
+# Expose port 9000 and start PHP-FPM
+EXPOSE 9000
+CMD ["php-fpm"]
